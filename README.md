@@ -8,7 +8,7 @@ you can add a scan step in your existing gitlab CI/CD pipeline.
 This can be done using:
 
     include:
-      - remote: <raw url of the yml file>
+      - remote: https://raw.githubusercontent.com/maarten-boot/rl-scanner-gitlab-include/main/rl-scanner-gitlab-include.yml
 
 
 The scan step will execute the reversinglabs/rl-scanner during the test stage and will upload a report artifact and a cyclonedx file.
