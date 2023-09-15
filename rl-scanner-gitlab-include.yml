@@ -1,0 +1,123 @@
+# REQUIREMENTS:
+#
+# A) We expect the calling environment to define the License secrets required for rl-scanner
+#
+#  - RLSECURE_SITE_KEY:
+#    must be declared as global variables type 'variable'
+#
+#  - RLSECURE_ENCODED_LICENSE:
+#    must be declared as global variables type 'variable'
+#
+# B) We expect the calling pipeline to set the following 3 environment variables
+#
+# - MY_ARTIFACT_TO_SCAN:
+#   The artifact we will be scanning (the file name)
+#
+# - PACKAGE_PATH:
+#   The relative location (relative to the checkout) of the artifact we will scan,
+#   we expect to find the artifact to scan at: ${PACKAGE_PATH}/${MY_ARTIFACT_TO_SCAN}
+#
+# - REPORT_PATH:
+#   A location where the reports will be created, (relative to the checkout).
+#   Best provide a empty directory as all data currently present in REPORT_PATH
+#   will be deleted before the scan starts.
+
+job-reversinglabs-rl-scanner:
+  # This job will run in the test stage of the pipeline
+  stage: test
+
+  # We will run the reversinglabs/rl-scanner:latest Docker image,
+  # but will use our own entry point to make it compatible with GitLab runner.
+  image:
+    name: reversinglabs/rl-scanner
+    entrypoint: ["/bin/bash", "-c"]
+
+  # The scan job will produce one artifact directory: REPORT_PATH
+  # We will also upload the cyclonedx report separately as that is a supported report type by GitLab
+  artifacts:
+    name: "reversinglabs/rl-scanner/reports"
+    when: always
+    paths:
+      - $REPORT_PATH/*
+    reports:
+      cyclonedx:
+        - $REPORT_PATH/report.cyclonedx.json
+
+  # Run the script to scan the provided artifact and produce a report.
+  # Here we have access to all artifacts of the previous jobs (e.g. build).
+  # This requires that the build step also defines artifacts.
+  script:
+    - |
+      # use functions for grouping and auto documentation
+      set +e # we handle errors ourselves in this script
+      fatal() {
+          local msg="$1"
+          echo "${msg}" >&2
+          DESCRIPTION="${msg}"
+          STATUS="error"
+          exit 101
+      }
+
+      verify_licence() {
+          [ -z "${RLSECURE_SITE_KEY}" ] && {
+              msg="we require 'RSECURE_SITE_KEY' to exist as a env variable"
+              fatal "${msg}"
+          }
+
+          [ -z "${RLSECURE_ENCODED_LICENSE}" ] && {
+              msg="we require 'RLSECURE_ENCODED_LICENSE' to exist as a env variable"
+              fatal "${msg}"
+          }
+      }
+
+      verify_paths() {
+          [ -z "${REPORT_PATH}" ] && {
+              msg="FATAL: 'REPORT_PATH' is not specified"
+              fatal "$msg"
+          }
+          rm -rf "${REPORT_PATH}" && mkdir "${REPORT_PATH}"
+
+          [ -f "./${PACKAGE_PATH}/${MY_ARTIFACT_TO_SCAN}" ] || {
+              msg="missing artifact to scan: no file found at: ${PACKAGE_PATH}/${MY_ARTIFACT_TO_SCAN}"
+              fatal "$msg"
+          }
+      }
+
+      run_scan() {
+          rl-scan \
+              --package-path="./${PACKAGE_PATH}/${MY_ARTIFACT_TO_SCAN}" \
+              --report-path="${REPORT_PATH}" \
+              --report-format=all 1>1 2>2
+          RR=$?
+
+          DESCRIPTION=$( grep 'Scan result:' 1 )
+          [ -z "${DESCRIPTION}" ] && {
+              # show stderr of the scan command on error
+              cat 2
+              msg="rl-scan exit with: $RR"
+              fatal "${msg}"
+          }
+      }
+
+      process_scan_result() {
+          # show stdout of the scan command
+          cat 1
+
+          STATUS="failed"
+          [ "${RR}" == "0" ] && {
+              STATUS="success"
+          }
+
+          echo "Status: ${STATUS}; ${DESCRIPTION}"
+          exit ${RR}
+      }
+
+      main() {
+          verify_licence
+          verify_paths
+          run_scan
+          process_scan_result
+      }
+
+      main
+
