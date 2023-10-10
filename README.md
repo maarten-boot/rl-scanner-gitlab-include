@@ -116,26 +116,35 @@ The workflow scans a build artifact with `rl-secure`, saves the report, and disp
 The remote can be included anywhere in the configuration file, but it will run only after the build stage.
 
 
-
 ```
+# REQUIREMENTS:
+#   RLSECURE_SITE_KEY: must be declared as global variables type 'variable'
+#   RLSECURE_ENCODED_LICENSE: must be declared as global variables type 'variable'
+
 variables:
   MY_ARTIFACT_TO_SCAN: bash
   PACKAGE_PATH: packages
-  REPORT_PATH: report
-
-# REQUIREMENTS:
-#   RLSECURE_SITE_KEY: must be declared as a global variable type 'variable'
-#   RLSECURE_ENCODED_LICENSE: must be declared as a global variable type 'variable'
+  REPORT_PATH: RlReport
+  #
+  RLSECURE_PROXY_SERVER: a-proxy.in-a.domain
+  RLSECURE_PROXY_PORT: 3128
+  RLSECURE_PROXY_USER: proxy_user
+  RLSECURE_PROXY_PASSWORD: proxy_password
+  #
+  RL_STORE: /rl-store
+  RL_PACKAGE_URL: testing/demo-rl-scanner@v1.0.3
+  # RL_DIFF_WITH: v1.0.1
+  RL_VERBOSE: 1
 
 include:
-  - remote: 'https://raw.githubusercontent.com/reversinglabs/rl-scanner-gitlab-include/main/rl-scanner-gitlab-include.yml'
+  # - remote: 'https://raw.githubusercontent.com/reversinglabs/rl-scanner-gitlab-include/main/rl-scanner-gitlab-include.yml'
+  - remote: 'https://raw.githubusercontent.com/maarten-boot/rl-scanner-gitlab-include/main/rl-scanner-gitlab-include.yml'
 
 job-build:
   stage: build
 
-  Image:
-    # Any image you require
-    name: ubuntu:latest
+  image:
+    name: fedora:latest # or any other image you require
 
   artifacts:
     name: "build_artifact"
@@ -145,27 +154,26 @@ job-build:
   script:
     - |
       export HOME=$( pwd ); echo $HOME
- 	  # Prepare to build an artifact as the build output
-      mkdir $PACKAGE_PATH
+      mkdir $PACKAGE_PATH # prepare to build a artifact as the build output
       cp /bin/${MY_ARTIFACT_TO_SCAN} $PACKAGE_PATH/
 
 job-deploy:
   stage: deploy
 
-  Image:
-    # Any image you require
-    name: ubuntu:latest
+  image:
+    name: ubuntu:latest # or any other image you require
 
   script:
     - |
-      # Here we have access to all artifacts from the previous jobs
-      # $PACKAGE_PATH and $REPORT_PATH should be visible
+      # here we have access to all artifacts
+      # of the previous jobs
+      # so $PACKAGE_PATH and $REPORT_PATH should be visible
       export HOME=$( pwd ); echo $HOME
       ls -la .
       ls -la $PACKAGE_PATH
       ls -la $REPORT_PATH
+      echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
 
-      echo "This job deploys the artifact from the $CI_COMMIT_BRANCH branch."
 ```
 
 
