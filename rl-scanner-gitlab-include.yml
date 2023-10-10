@@ -22,6 +22,18 @@
 #   Best provide a empty directory as all data currently present in REPORT_PATH
 #   will be deleted before the scan starts.
 
+# If we have a local runner configured using the docker gitlab runner procedure,
+# we can store scan results local and optionally perform diff scan with:
+# RL_STORE
+# RL_PACKAGE_URL
+# RL_DIFF_WITH
+
+# If the local runner needs to access the internet via a proxy we support that using:
+# RL_PROXY_SERVER
+# RL_PROXY_PORT
+# RL_PROXY_USER
+# RL_PROXY_PASSWORD
+
 job-reversinglabs-rl-scanner:
   # This job will run in the test stage of the pipeline
   stage: test
