@@ -202,30 +202,9 @@ job-reversinglabs-rl-scanner:
           fi
           DIFF_WITH="--diff-with=${RL_DIFF_WITH}"
       }
-      prep_proxy_data()
-      {
-          PROXY_DATA=""
-          if [ ! -z "${RLSECURE_PROXY_SERVER}" ]
-          then
-              PROXY_DATA="${PROXY_DATA} -e RLSECURE_PROXY_SERVER=${RLSECURE_PROXY_SERVER}"
-          fi
-          if [ ! -z "${RLSECURE_PROXY_PORT}" ]
-          then
-              PROXY_DATA="${PROXY_DATA} -e RLSECURE_PROXY_PORT=${RLSECURE_PROXY_PORT}"
-          fi
-          if [ ! -z "${RLSECURE_PROXY_USER}" ]
-          then
-              PROXY_DATA="${PROXY_DATA} -e RLSECURE_PROXY_USER=${RLSECURE_PROXY_USER}"
-          fi
-          if [ ! -z "${RLSECURE_PROXY_PASSWORD}" ]
-          then
-              PROXY_DATA="${PROXY_DATA} -e RLSECURE_PROXY_PASSWORD=${RLSECURE_PROXY_PASSWORD}"
-          fi
-      }
       run_scan_nostore()
       {
           rl-scan \
-              ${PROXY_DATA} \
               --package-path="./${PACKAGE_PATH}/${MY_ARTIFACT_TO_SCAN}" \
               --report-path="${REPORT_PATH}" \
               --report-format=all 1>1 2>2
@@ -234,7 +213,6 @@ job-reversinglabs-rl-scanner:
       run_scan_withstore()
       {
           rl-scan \
-              ${PROXY_DATA} \
               --rl-store="${RL_STORE}" \
               --purl="${RL_PACKAGE_URL}" \
               --replace \
@@ -280,7 +258,6 @@ job-reversinglabs-rl-scanner:
           verify_licence
           verify_paths
           prep_report
-          prep_proxy_data
           makeDiffWith
           if [ -z "${RL_STORE}" ]
           then
