@@ -30,7 +30,24 @@
 # - RL_PACKAGE_URL: optional, string, default ''.
 # - RL_DIFF_WITH: optional, string, default ''.
 #
+# E) Addistional verbosity can be configured with:
+# - RL_VERBOSE: optional, default '' (anything else will be treated as true)
 set +e # we handle errors ourselves in this script
+do_verbose()
+{
+    cat <<!
+REPORT_PATH:              ${REPORT_PATH:-No path specified}
+PACKAGE_PATH:             ${PACKAGE_PATH:-No path specified}
+MY_ARTIFACT_TO_SCAN:      ${MY_ARTIFACT_TO_SCAN:-No artifact specified}
+RL_STORE:                 ${RL_STORE:-No path specified for RL_STORE: no diff scan can be executed}
+RL_PACKAGE_URL:           ${RL_PACKAGE_URL:-No Package Url given: no diff scan can be executed}
+RL_DIFF_WITH:             ${RL_DIFF_WITH:-No diff with was requested}
+RLSECURE_PROXY_SERVER:    ${RLSECURE_PROXY_SERVER:-No proxy server was provided}
+RLSECURE_PROXY_PORT:      ${RLSECURE_PROXY_PORT:-No proxy port was provided}
+RLSECURE_PROXY_USER:      ${RLSECURE_PROXY_USER:-No proxy user was provided}
+RLSECURE_PROXY_PASSWORD:  ${RLSECURE_PROXY_PASSWORD:-No proxy pass was provided}
+!
+}
 fatal()
 {
     local msg="$1"
@@ -192,6 +209,10 @@ process_scan_result()
 }
 main()
 {
+    if [ ! -z "${RL_VERBOSE}" ]
+    then
+        do_verbose
+    fi
     verify_licence
     verify_paths
     prep_report
